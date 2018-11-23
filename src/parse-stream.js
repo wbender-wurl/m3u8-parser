@@ -386,6 +386,18 @@ export default class ParseStream extends Stream {
       this.trigger('data', event);
       return;
     }
+    match = (/^#EXT-OATCLS-SCTE35:?(.*)?$/).exec(line);
+    if (match) {
+      event = {
+        type: 'tag',
+        tagType: 'scte35'
+      };
+      if (match[1]) {
+        event.data = match[1];
+      }
+      this.trigger('data', event);
+      return;
+    }
     match = (/^#EXT-X-CUE-OUT-CONT:?(.*)?$/).exec(line);
     if (match) {
       event = {

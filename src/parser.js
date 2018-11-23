@@ -310,6 +310,9 @@ export default class Parser extends Stream {
                 precise: entry.attributes.PRECISE
               };
             },
+            'scte35'() {
+              currentUri.scte35 = entry.data;
+            },
             'cue-out'() {
               currentUri.cueOut = entry.data;
             },
