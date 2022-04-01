@@ -1,155 +1,21 @@
-/*! @name m3u8-parser @version 4.2.0 @license Apache-2.0 */
+/*! @name m3u8-parser @version 4.7.0 @license Apache-2.0 */
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-function _extends() {
-  _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
+var _inheritsLoose = require('@babel/runtime/helpers/inheritsLoose');
+var Stream = require('@videojs/vhs-utils/cjs/stream.js');
+var _extends = require('@babel/runtime/helpers/extends');
+var _assertThisInitialized = require('@babel/runtime/helpers/assertThisInitialized');
+var decodeB64ToUint8Array = require('@videojs/vhs-utils/cjs/decode-b64-to-uint8-array.js');
 
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
-    }
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
-    return target;
-  };
-
-  return _extends.apply(this, arguments);
-}
-
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  subClass.__proto__ = superClass;
-}
-
-function _assertThisInitialized(self) {
-  if (self === void 0) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return self;
-}
-
-/**
- * @file stream.js
- */
-
-/**
- * A lightweight readable stream implementation that handles event dispatching.
- *
- * @class Stream
- */
-var Stream =
-/*#__PURE__*/
-function () {
-  function Stream() {
-    this.listeners = {};
-  }
-  /**
-   * Add a listener for a specified event type.
-   *
-   * @param {string} type the event name
-   * @param {Function} listener the callback to be invoked when an event of
-   * the specified type occurs
-   */
-
-
-  var _proto = Stream.prototype;
-
-  _proto.on = function on(type, listener) {
-    if (!this.listeners[type]) {
-      this.listeners[type] = [];
-    }
-
-    this.listeners[type].push(listener);
-  };
-  /**
-   * Remove a listener for a specified event type.
-   *
-   * @param {string} type the event name
-   * @param {Function} listener  a function previously registered for this
-   * type of event through `on`
-   * @return {boolean} if we could turn it off or not
-   */
-
-
-  _proto.off = function off(type, listener) {
-    if (!this.listeners[type]) {
-      return false;
-    }
-
-    var index = this.listeners[type].indexOf(listener);
-    this.listeners[type].splice(index, 1);
-    return index > -1;
-  };
-  /**
-   * Trigger an event of the specified type on this stream. Any additional
-   * arguments to this function are passed as parameters to event listeners.
-   *
-   * @param {string} type the event name
-   */
-
-
-  _proto.trigger = function trigger(type) {
-    var callbacks = this.listeners[type];
-    var i;
-    var length;
-    var args;
-
-    if (!callbacks) {
-      return;
-    } // Slicing the arguments on every invocation of this method
-    // can add a significant amount of overhead. Avoid the
-    // intermediate object creation for the common case of a
-    // single callback argument
-
-
-    if (arguments.length === 2) {
-      length = callbacks.length;
-
-      for (i = 0; i < length; ++i) {
-        callbacks[i].call(this, arguments[1]);
-      }
-    } else {
-      args = Array.prototype.slice.call(arguments, 1);
-      length = callbacks.length;
-
-      for (i = 0; i < length; ++i) {
-        callbacks[i].apply(this, args);
-      }
-    }
-  };
-  /**
-   * Destroys the stream and cleans up.
-   */
-
-
-  _proto.dispose = function dispose() {
-    this.listeners = {};
-  };
-  /**
-   * Forwards all `data` events on this stream to the destination stream. The
-   * destination stream should provide a method `push` to receive the data
-   * events as they arrive.
-   *
-   * @param {Stream} destination the stream that will receive all `data` events
-   * @see http://nodejs.org/api/stream.html#stream_readable_pipe_destination_options
-   */
-
-
-  _proto.pipe = function pipe(destination) {
-    this.on('data', function (data) {
-      destination.push(data);
-    });
-  };
-
-  return Stream;
-}();
+var _inheritsLoose__default = /*#__PURE__*/_interopDefaultLegacy(_inheritsLoose);
+var Stream__default = /*#__PURE__*/_interopDefaultLegacy(Stream);
+var _extends__default = /*#__PURE__*/_interopDefaultLegacy(_extends);
+var _assertThisInitialized__default = /*#__PURE__*/_interopDefaultLegacy(_assertThisInitialized);
+var decodeB64ToUint8Array__default = /*#__PURE__*/_interopDefaultLegacy(decodeB64ToUint8Array);
 
 /**
  * A stream that buffers string input and generates a `data` event for each
@@ -159,10 +25,8 @@ function () {
  * @extends Stream
  */
 
-var LineStream =
-/*#__PURE__*/
-function (_Stream) {
-  _inheritsLoose(LineStream, _Stream);
+var LineStream = /*#__PURE__*/function (_Stream) {
+  _inheritsLoose__default['default'](LineStream, _Stream);
 
   function LineStream() {
     var _this;
@@ -192,8 +56,26 @@ function (_Stream) {
   };
 
   return LineStream;
-}(Stream);
+}(Stream__default['default']);
 
+var TAB = String.fromCharCode(0x09);
+
+var parseByterange = function parseByterange(byterangeString) {
+  // optionally match and capture 0+ digits before `@`
+  // optionally match and capture 0+ digits after `@`
+  var match = /([0-9.]*)?@?([0-9.]*)?/.exec(byterangeString || '');
+  var result = {};
+
+  if (match[1]) {
+    result.length = parseInt(match[1], 10);
+  }
+
+  if (match[2]) {
+    result.offset = parseInt(match[2], 10);
+  }
+
+  return result;
+};
 /**
  * "forgiving" attribute list psuedo-grammar:
  * attributes -> keyvalue (',' keyvalue)*
@@ -201,6 +83,7 @@ function (_Stream) {
  * key        -> [^=]*
  * value      -> '"' [^"]* '"' | [^,]*
  */
+
 
 var attributeSeparator = function attributeSeparator() {
   var key = '[^=]*';
@@ -265,16 +148,15 @@ var parseAttributes = function parseAttributes(attributes) {
  */
 
 
-var ParseStream =
-/*#__PURE__*/
-function (_Stream) {
-  _inheritsLoose(ParseStream, _Stream);
+var ParseStream = /*#__PURE__*/function (_Stream) {
+  _inheritsLoose__default['default'](ParseStream, _Stream);
 
   function ParseStream() {
     var _this;
 
     _this = _Stream.call(this) || this;
     _this.customParsers = [];
+    _this.tagMappers = [];
     return _this;
   }
   /**
@@ -287,6 +169,8 @@ function (_Stream) {
   var _proto = ParseStream.prototype;
 
   _proto.push = function push(line) {
+    var _this2 = this;
+
     var match;
     var event; // strip whitespace
 
@@ -304,440 +188,574 @@ function (_Stream) {
         uri: line
       });
       return;
-    }
+    } // map tags
 
-    for (var i = 0; i < this.customParsers.length; i++) {
-      if (this.customParsers[i].call(this, line)) {
+
+    var newLines = this.tagMappers.reduce(function (acc, mapper) {
+      var mappedLine = mapper(line); // skip if unchanged
+
+      if (mappedLine === line) {
+        return acc;
+      }
+
+      return acc.concat([mappedLine]);
+    }, [line]);
+    newLines.forEach(function (newLine) {
+      for (var i = 0; i < _this2.customParsers.length; i++) {
+        if (_this2.customParsers[i].call(_this2, newLine)) {
+          return;
+        }
+      } // Comments
+
+
+      if (newLine.indexOf('#EXT') !== 0) {
+        _this2.trigger('data', {
+          type: 'comment',
+          text: newLine.slice(1)
+        });
+
+        return;
+      } // strip off any carriage returns here so the regex matching
+      // doesn't have to account for them.
+
+
+      newLine = newLine.replace('\r', ''); // Tags
+
+      match = /^#EXTM3U/.exec(newLine);
+
+      if (match) {
+        _this2.trigger('data', {
+          type: 'tag',
+          tagType: 'm3u'
+        });
+
         return;
       }
-    } // Comments
 
+      match = /^#EXTINF:?([0-9\.]*)?,?(.*)?$/.exec(newLine);
 
-    if (line.indexOf('#EXT') !== 0) {
-      this.trigger('data', {
-        type: 'comment',
-        text: line.slice(1)
-      });
-      return;
-    } // strip off any carriage returns here so the regex matching
-    // doesn't have to account for them.
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'inf'
+        };
 
-
-    line = line.replace('\r', ''); // Tags
-
-    match = /^#EXTM3U/.exec(line);
-
-    if (match) {
-      this.trigger('data', {
-        type: 'tag',
-        tagType: 'm3u'
-      });
-      return;
-    }
-
-    match = /^#EXTINF:?([0-9\.]*)?,?(.*)?$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'inf'
-      };
-
-      if (match[1]) {
-        event.duration = parseFloat(match[1]);
-      }
-
-      if (match[2]) {
-        event.title = match[2];
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-TARGETDURATION:?([0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'targetduration'
-      };
-
-      if (match[1]) {
-        event.duration = parseInt(match[1], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#ZEN-TOTAL-DURATION:?([0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'totalduration'
-      };
-
-      if (match[1]) {
-        event.duration = parseInt(match[1], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-VERSION:?([0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'version'
-      };
-
-      if (match[1]) {
-        event.version = parseInt(match[1], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-MEDIA-SEQUENCE:?(\-?[0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'media-sequence'
-      };
-
-      if (match[1]) {
-        event.number = parseInt(match[1], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-DISCONTINUITY-SEQUENCE:?(\-?[0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'discontinuity-sequence'
-      };
-
-      if (match[1]) {
-        event.number = parseInt(match[1], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-PLAYLIST-TYPE:?(.*)?$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'playlist-type'
-      };
-
-      if (match[1]) {
-        event.playlistType = match[1];
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-BYTERANGE:?([0-9.]*)?@?([0-9.]*)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'byterange'
-      };
-
-      if (match[1]) {
-        event.length = parseInt(match[1], 10);
-      }
-
-      if (match[2]) {
-        event.offset = parseInt(match[2], 10);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-ALLOW-CACHE:?(YES|NO)?/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'allow-cache'
-      };
-
-      if (match[1]) {
-        event.allowed = !/NO/.test(match[1]);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-MAP:?(.*)$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'map'
-      };
-
-      if (match[1]) {
-        var attributes = parseAttributes(match[1]);
-
-        if (attributes.URI) {
-          event.uri = attributes.URI;
+        if (match[1]) {
+          event.duration = parseFloat(match[1]);
         }
 
-        if (attributes.BYTERANGE) {
-          var _attributes$BYTERANGE = attributes.BYTERANGE.split('@'),
-              length = _attributes$BYTERANGE[0],
-              offset = _attributes$BYTERANGE[1];
-
-          event.byterange = {};
-
-          if (length) {
-            event.byterange.length = parseInt(length, 10);
-          }
-
-          if (offset) {
-            event.byterange.offset = parseInt(offset, 10);
-          }
+        if (match[2]) {
+          event.title = match[2];
         }
+
+        _this2.trigger('data', event);
+
+        return;
       }
 
-      this.trigger('data', event);
-      return;
-    }
+      match = /^#EXT-X-TARGETDURATION:?([0-9.]*)?/.exec(newLine);
 
-    match = /^#EXT-X-STREAM-INF:?(.*)$/.exec(line);
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'targetduration'
+        };
 
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'stream-inf'
-      };
+        if (match[1]) {
+          event.duration = parseInt(match[1], 10);
+        }
 
-      if (match[1]) {
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-VERSION:?([0-9.]*)?/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'version'
+        };
+
+        if (match[1]) {
+          event.version = parseInt(match[1], 10);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-MEDIA-SEQUENCE:?(\-?[0-9.]*)?/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'media-sequence'
+        };
+
+        if (match[1]) {
+          event.number = parseInt(match[1], 10);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-DISCONTINUITY-SEQUENCE:?(\-?[0-9.]*)?/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'discontinuity-sequence'
+        };
+
+        if (match[1]) {
+          event.number = parseInt(match[1], 10);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-PLAYLIST-TYPE:?(.*)?$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'playlist-type'
+        };
+
+        if (match[1]) {
+          event.playlistType = match[1];
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-BYTERANGE:?(.*)?$/.exec(newLine);
+
+      if (match) {
+        event = _extends__default['default'](parseByterange(match[1]), {
+          type: 'tag',
+          tagType: 'byterange'
+        });
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-ALLOW-CACHE:?(YES|NO)?/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'allow-cache'
+        };
+
+        if (match[1]) {
+          event.allowed = !/NO/.test(match[1]);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-MAP:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'map'
+        };
+
+        if (match[1]) {
+          var attributes = parseAttributes(match[1]);
+
+          if (attributes.URI) {
+            event.uri = attributes.URI;
+          }
+
+          if (attributes.BYTERANGE) {
+            event.byterange = parseByterange(attributes.BYTERANGE);
+          }
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-STREAM-INF:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'stream-inf'
+        };
+
+        if (match[1]) {
+          event.attributes = parseAttributes(match[1]);
+
+          if (event.attributes.RESOLUTION) {
+            var split = event.attributes.RESOLUTION.split('x');
+            var resolution = {};
+
+            if (split[0]) {
+              resolution.width = parseInt(split[0], 10);
+            }
+
+            if (split[1]) {
+              resolution.height = parseInt(split[1], 10);
+            }
+
+            event.attributes.RESOLUTION = resolution;
+          }
+
+          if (event.attributes.BANDWIDTH) {
+            event.attributes.BANDWIDTH = parseInt(event.attributes.BANDWIDTH, 10);
+          }
+
+          if (event.attributes['PROGRAM-ID']) {
+            event.attributes['PROGRAM-ID'] = parseInt(event.attributes['PROGRAM-ID'], 10);
+          }
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-MEDIA:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'media'
+        };
+
+        if (match[1]) {
+          event.attributes = parseAttributes(match[1]);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-ENDLIST/.exec(newLine);
+
+      if (match) {
+        _this2.trigger('data', {
+          type: 'tag',
+          tagType: 'endlist'
+        });
+
+        return;
+      }
+
+      match = /^#EXT-X-DISCONTINUITY/.exec(newLine);
+
+      if (match) {
+        _this2.trigger('data', {
+          type: 'tag',
+          tagType: 'discontinuity'
+        });
+
+        return;
+      }
+
+      match = /^#EXT-X-PROGRAM-DATE-TIME:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'program-date-time'
+        };
+
+        if (match[1]) {
+          event.dateTimeString = match[1];
+          event.dateTimeObject = new Date(match[1]);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-KEY:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'key'
+        };
+
+        if (match[1]) {
+          event.attributes = parseAttributes(match[1]); // parse the IV string into a Uint32Array
+
+          if (event.attributes.IV) {
+            if (event.attributes.IV.substring(0, 2).toLowerCase() === '0x') {
+              event.attributes.IV = event.attributes.IV.substring(2);
+            }
+
+            event.attributes.IV = event.attributes.IV.match(/.{8}/g);
+            event.attributes.IV[0] = parseInt(event.attributes.IV[0], 16);
+            event.attributes.IV[1] = parseInt(event.attributes.IV[1], 16);
+            event.attributes.IV[2] = parseInt(event.attributes.IV[2], 16);
+            event.attributes.IV[3] = parseInt(event.attributes.IV[3], 16);
+            event.attributes.IV = new Uint32Array(event.attributes.IV);
+          }
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-START:?(.*)$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'start'
+        };
+
+        if (match[1]) {
+          event.attributes = parseAttributes(match[1]);
+          event.attributes['TIME-OFFSET'] = parseFloat(event.attributes['TIME-OFFSET']);
+          event.attributes.PRECISE = /YES/.test(event.attributes.PRECISE);
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-OATCLS-SCTE35:?(.*)?$/.exec(line);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'scte35'
+        };
+
+        if (match[1]) {
+          event.data = match[1];
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-CUE-OUT-CONT:?(.*)?$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'cue-out-cont'
+        };
+
+        if (match[1]) {
+          event.data = match[1];
+        } else {
+          event.data = '';
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-CUE-OUT:?(.*)?$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'cue-out'
+        };
+
+        if (match[1]) {
+          event.data = match[1];
+        } else {
+          event.data = '';
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-CUE-IN:?(.*)?$/.exec(newLine);
+
+      if (match) {
+        event = {
+          type: 'tag',
+          tagType: 'cue-in'
+        };
+
+        if (match[1]) {
+          event.data = match[1];
+        } else {
+          event.data = '';
+        }
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-SKIP:(.*)$/.exec(newLine);
+
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'skip'
+        };
         event.attributes = parseAttributes(match[1]);
 
-        if (event.attributes.RESOLUTION) {
-          var split = event.attributes.RESOLUTION.split('x');
-          var resolution = {};
-
-          if (split[0]) {
-            resolution.width = parseInt(split[0], 10);
-          }
-
-          if (split[1]) {
-            resolution.height = parseInt(split[1], 10);
-          }
-
-          event.attributes.RESOLUTION = resolution;
+        if (event.attributes.hasOwnProperty('SKIPPED-SEGMENTS')) {
+          event.attributes['SKIPPED-SEGMENTS'] = parseInt(event.attributes['SKIPPED-SEGMENTS'], 10);
         }
 
-        if (event.attributes.BANDWIDTH) {
-          event.attributes.BANDWIDTH = parseInt(event.attributes.BANDWIDTH, 10);
+        if (event.attributes.hasOwnProperty('RECENTLY-REMOVED-DATERANGES')) {
+          event.attributes['RECENTLY-REMOVED-DATERANGES'] = event.attributes['RECENTLY-REMOVED-DATERANGES'].split(TAB);
         }
 
-        if (event.attributes['PROGRAM-ID']) {
-          event.attributes['PROGRAM-ID'] = parseInt(event.attributes['PROGRAM-ID'], 10);
-        }
+        _this2.trigger('data', event);
+
+        return;
       }
 
-      this.trigger('data', event);
-      return;
-    }
+      match = /^#EXT-X-PART:(.*)$/.exec(newLine);
 
-    match = /^#EXT-X-MEDIA:?(.*)$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'media'
-      };
-
-      if (match[1]) {
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'part'
+        };
         event.attributes = parseAttributes(match[1]);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-ENDLIST/.exec(line);
-
-    if (match) {
-      this.trigger('data', {
-        type: 'tag',
-        tagType: 'endlist'
-      });
-      return;
-    }
-
-    match = /^#EXT-X-DISCONTINUITY/.exec(line);
-
-    if (match) {
-      this.trigger('data', {
-        type: 'tag',
-        tagType: 'discontinuity'
-      });
-      return;
-    }
-
-    match = /^#EXT-X-PROGRAM-DATE-TIME:?(.*)$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'program-date-time'
-      };
-
-      if (match[1]) {
-        event.dateTimeString = match[1];
-        event.dateTimeObject = new Date(match[1]);
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-KEY:?(.*)$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'key'
-      };
-
-      if (match[1]) {
-        event.attributes = parseAttributes(match[1]); // parse the IV string into a Uint32Array
-
-        if (event.attributes.IV) {
-          if (event.attributes.IV.substring(0, 2).toLowerCase() === '0x') {
-            event.attributes.IV = event.attributes.IV.substring(2);
+        ['DURATION'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = parseFloat(event.attributes[key]);
           }
+        });
+        ['INDEPENDENT', 'GAP'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = /YES/.test(event.attributes[key]);
+          }
+        });
 
-          event.attributes.IV = event.attributes.IV.match(/.{8}/g);
-          event.attributes.IV[0] = parseInt(event.attributes.IV[0], 16);
-          event.attributes.IV[1] = parseInt(event.attributes.IV[1], 16);
-          event.attributes.IV[2] = parseInt(event.attributes.IV[2], 16);
-          event.attributes.IV[3] = parseInt(event.attributes.IV[3], 16);
-          event.attributes.IV = new Uint32Array(event.attributes.IV);
+        if (event.attributes.hasOwnProperty('BYTERANGE')) {
+          event.attributes.byterange = parseByterange(event.attributes.BYTERANGE);
         }
+
+        _this2.trigger('data', event);
+
+        return;
       }
 
-      this.trigger('data', event);
-      return;
-    }
+      match = /^#EXT-X-SERVER-CONTROL:(.*)$/.exec(newLine);
 
-    match = /^#EXT-X-START:?(.*)$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'start'
-      };
-
-      if (match[1]) {
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'server-control'
+        };
         event.attributes = parseAttributes(match[1]);
-        event.attributes['TIME-OFFSET'] = parseFloat(event.attributes['TIME-OFFSET']);
-        event.attributes.PRECISE = /YES/.test(event.attributes.PRECISE);
+        ['CAN-SKIP-UNTIL', 'PART-HOLD-BACK', 'HOLD-BACK'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = parseFloat(event.attributes[key]);
+          }
+        });
+        ['CAN-SKIP-DATERANGES', 'CAN-BLOCK-RELOAD'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = /YES/.test(event.attributes[key]);
+          }
+        });
+
+        _this2.trigger('data', event);
+
+        return;
       }
 
-      this.trigger('data', event);
-      return;
-    }
+      match = /^#EXT-X-PART-INF:(.*)$/.exec(newLine);
 
-    match = /^#EXT-OATCLS-SCTE35:?(.*)?$/.exec(line);
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'part-inf'
+        };
+        event.attributes = parseAttributes(match[1]);
+        ['PART-TARGET'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = parseFloat(event.attributes[key]);
+          }
+        });
 
-    if (match) {
-      event = {
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-PRELOAD-HINT:(.*)$/.exec(newLine);
+
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'preload-hint'
+        };
+        event.attributes = parseAttributes(match[1]);
+        ['BYTERANGE-START', 'BYTERANGE-LENGTH'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = parseInt(event.attributes[key], 10);
+            var subkey = key === 'BYTERANGE-LENGTH' ? 'length' : 'offset';
+            event.attributes.byterange = event.attributes.byterange || {};
+            event.attributes.byterange[subkey] = event.attributes[key]; // only keep the parsed byterange object.
+
+            delete event.attributes[key];
+          }
+        });
+
+        _this2.trigger('data', event);
+
+        return;
+      }
+
+      match = /^#EXT-X-RENDITION-REPORT:(.*)$/.exec(newLine);
+
+      if (match && match[1]) {
+        event = {
+          type: 'tag',
+          tagType: 'rendition-report'
+        };
+        event.attributes = parseAttributes(match[1]);
+        ['LAST-MSN', 'LAST-PART'].forEach(function (key) {
+          if (event.attributes.hasOwnProperty(key)) {
+            event.attributes[key] = parseInt(event.attributes[key], 10);
+          }
+        });
+
+        _this2.trigger('data', event);
+
+        return;
+      } // unknown tag type
+
+
+      _this2.trigger('data', {
         type: 'tag',
-        tagType: 'scte35'
-      };
-
-      if (match[1]) {
-        event.data = match[1];
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-CUE-OUT-CONT:?(.*)?$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'cue-out-cont'
-      };
-
-      if (match[1]) {
-        event.data = match[1];
-      } else {
-        event.data = '';
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-CUE-OUT:?(.*)?$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'cue-out'
-      };
-
-      if (match[1]) {
-        event.data = match[1];
-      } else {
-        event.data = '';
-      }
-
-      this.trigger('data', event);
-      return;
-    }
-
-    match = /^#EXT-X-CUE-IN:?(.*)?$/.exec(line);
-
-    if (match) {
-      event = {
-        type: 'tag',
-        tagType: 'cue-in'
-      };
-
-      if (match[1]) {
-        event.data = match[1];
-      } else {
-        event.data = '';
-      }
-
-      this.trigger('data', event);
-      return;
-    } // unknown tag type
-
-
-    this.trigger('data', {
-      type: 'tag',
-      data: line.slice(4)
+        data: newLine.slice(4)
+      });
     });
-  };
+  }
   /**
    * Add a parser for custom headers
    *
@@ -747,10 +765,10 @@ function (_Stream) {
    * @param {Function} [options.dataParser] function to parse the line into an object
    * @param {boolean}  [options.segment]    should tag data be attached to the segment object
    */
-
+  ;
 
   _proto.addParser = function addParser(_ref) {
-    var _this2 = this;
+    var _this3 = this;
 
     var expression = _ref.expression,
         customType = _ref.customType,
@@ -767,7 +785,7 @@ function (_Stream) {
       var match = expression.exec(line);
 
       if (match) {
-        _this2.trigger('data', {
+        _this3.trigger('data', {
           type: 'custom',
           data: dataParser(line),
           customType: customType,
@@ -777,11 +795,97 @@ function (_Stream) {
         return true;
       }
     });
+  }
+  /**
+   * Add a custom header mapper
+   *
+   * @param {Object}   options
+   * @param {RegExp}   options.expression   a regular expression to match the custom header
+   * @param {Function} options.map          function to translate tag into a different tag
+   */
+  ;
+
+  _proto.addTagMapper = function addTagMapper(_ref2) {
+    var expression = _ref2.expression,
+        map = _ref2.map;
+
+    var mapFn = function mapFn(line) {
+      if (expression.test(line)) {
+        return map(line);
+      }
+
+      return line;
+    };
+
+    this.tagMappers.push(mapFn);
   };
 
   return ParseStream;
-}(Stream);
+}(Stream__default['default']);
 
+var camelCase = function camelCase(str) {
+  return str.toLowerCase().replace(/-(\w)/g, function (a) {
+    return a[1].toUpperCase();
+  });
+};
+
+var camelCaseKeys = function camelCaseKeys(attributes) {
+  var result = {};
+  Object.keys(attributes).forEach(function (key) {
+    result[camelCase(key)] = attributes[key];
+  });
+  return result;
+}; // set SERVER-CONTROL hold back based upon targetDuration and partTargetDuration
+// we need this helper because defaults are based upon targetDuration and
+// partTargetDuration being set, but they may not be if SERVER-CONTROL appears before
+// target durations are set.
+
+
+var setHoldBack = function setHoldBack(manifest) {
+  var serverControl = manifest.serverControl,
+      targetDuration = manifest.targetDuration,
+      partTargetDuration = manifest.partTargetDuration;
+
+  if (!serverControl) {
+    return;
+  }
+
+  var tag = '#EXT-X-SERVER-CONTROL';
+  var hb = 'holdBack';
+  var phb = 'partHoldBack';
+  var minTargetDuration = targetDuration && targetDuration * 3;
+  var minPartDuration = partTargetDuration && partTargetDuration * 2;
+
+  if (targetDuration && !serverControl.hasOwnProperty(hb)) {
+    serverControl[hb] = minTargetDuration;
+    this.trigger('info', {
+      message: tag + " defaulting HOLD-BACK to targetDuration * 3 (" + minTargetDuration + ")."
+    });
+  }
+
+  if (minTargetDuration && serverControl[hb] < minTargetDuration) {
+    this.trigger('warn', {
+      message: tag + " clamping HOLD-BACK (" + serverControl[hb] + ") to targetDuration * 3 (" + minTargetDuration + ")"
+    });
+    serverControl[hb] = minTargetDuration;
+  } // default no part hold back to part target duration * 3
+
+
+  if (partTargetDuration && !serverControl.hasOwnProperty(phb)) {
+    serverControl[phb] = partTargetDuration * 3;
+    this.trigger('info', {
+      message: tag + " defaulting PART-HOLD-BACK to partTargetDuration * 3 (" + serverControl[phb] + ")."
+    });
+  } // if part hold back is too small default it to part target duration * 2
+
+
+  if (partTargetDuration && serverControl[phb] < minPartDuration) {
+    this.trigger('warn', {
+      message: tag + " clamping PART-HOLD-BACK (" + serverControl[phb] + ") to partTargetDuration * 2 (" + minPartDuration + ")."
+    });
+    serverControl[phb] = minPartDuration;
+  }
+};
 /**
  * A parser for M3U8 files. The current interpretation of the input is
  * exposed as a property `manifest` on parser objects. It's just two lines to
@@ -804,10 +908,9 @@ function (_Stream) {
  * @extends Stream
  */
 
-var Parser =
-/*#__PURE__*/
-function (_Stream) {
-  _inheritsLoose(Parser, _Stream);
+
+var Parser = /*#__PURE__*/function (_Stream) {
+  _inheritsLoose__default['default'](Parser, _Stream);
 
   function Parser() {
     var _this;
@@ -820,7 +923,7 @@ function (_Stream) {
     /* eslint-disable consistent-this */
 
 
-    var self = _assertThisInitialized(_assertThisInitialized(_this));
+    var self = _assertThisInitialized__default['default'](_this);
     /* eslint-enable consistent-this */
 
 
@@ -831,6 +934,8 @@ function (_Stream) {
 
     var _key;
 
+    var hasParts = false;
+
     var noop = function noop() {};
 
     var defaultMediaGroups = {
@@ -838,7 +943,10 @@ function (_Stream) {
       'VIDEO': {},
       'CLOSED-CAPTIONS': {},
       'SUBTITLES': {}
-    }; // group segments into numbered timelines delineated by discontinuities
+    }; // This is the Widevine UUID from DASH IF IOP. The same exact string is
+    // used in MPDs with Widevine encrypted streams.
+
+    var widevineUuid = 'urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed'; // group segments into numbered timelines delineated by discontinuities
 
     var currentTimeline = 0; // the manifest is empty until the parse stream begins delivering data
 
@@ -846,7 +954,36 @@ function (_Stream) {
       allowCache: true,
       discontinuityStarts: [],
       segments: []
-    }; // update the manifest with the m3u8 entry from the parse stream
+    }; // keep track of the last seen segment's byte range end, as segments are not required
+    // to provide the offset, in which case it defaults to the next byte after the
+    // previous segment
+
+    var lastByterangeEnd = 0; // keep track of the last seen part's byte range end.
+
+    var lastPartByterangeEnd = 0;
+
+    _this.on('end', function () {
+      // only add preloadSegment if we don't yet have a uri for it.
+      // and we actually have parts/preloadHints
+      if (currentUri.uri || !currentUri.parts && !currentUri.preloadHints) {
+        return;
+      }
+
+      if (!currentUri.map && currentMap) {
+        currentUri.map = currentMap;
+      }
+
+      if (!currentUri.key && _key) {
+        currentUri.key = _key;
+      }
+
+      if (!currentUri.timeline && typeof currentTimeline === 'number') {
+        currentUri.timeline = currentTimeline;
+      }
+
+      _this.manifest.preloadSegment = currentUri;
+    }); // update the manifest with the m3u8 entry from the parse stream
+
 
     _this.parseStream.on('data', function (entry) {
       var mediaGroup;
@@ -855,6 +992,11 @@ function (_Stream) {
         tag: function tag() {
           // switch based on the tag type
           (({
+            version: function version() {
+              if (entry.version) {
+                this.manifest.version = entry.version;
+              }
+            },
             'allow-cache': function allowCache() {
               this.manifest.allowCache = entry.allowed;
 
@@ -873,10 +1015,17 @@ function (_Stream) {
                 byterange.length = entry.length;
 
                 if (!('offset' in entry)) {
-                  this.trigger('info', {
-                    message: 'defaulting offset to zero'
-                  });
-                  entry.offset = 0;
+                  /*
+                   * From the latest spec (as of this writing):
+                   * https://tools.ietf.org/html/draft-pantos-http-live-streaming-23#section-4.3.2.2
+                   *
+                   * Same text since EXT-X-BYTERANGE's introduction in draft 7:
+                   * https://tools.ietf.org/html/draft-pantos-http-live-streaming-07#section-3.3.1)
+                   *
+                   * "If o [offset] is not present, the sub-range begins at the next byte
+                   * following the sub-range of the previous media segment."
+                   */
+                  entry.offset = lastByterangeEnd;
                 }
               }
 
@@ -884,6 +1033,8 @@ function (_Stream) {
                 currentUri.byterange = byterange;
                 byterange.offset = entry.offset;
               }
+
+              lastByterangeEnd = byterange.offset + byterange.length;
             },
             endlist: function endlist() {
               this.manifest.endList = true;
@@ -934,6 +1085,71 @@ function (_Stream) {
                 this.trigger('warn', {
                   message: 'ignoring key declaration without URI'
                 });
+                return;
+              }
+
+              if (entry.attributes.KEYFORMAT === 'com.apple.streamingkeydelivery') {
+                this.manifest.contentProtection = this.manifest.contentProtection || {}; // TODO: add full support for this.
+
+                this.manifest.contentProtection['com.apple.fps.1_0'] = {
+                  attributes: entry.attributes
+                };
+                return;
+              }
+
+              if (entry.attributes.KEYFORMAT === 'com.microsoft.playready') {
+                this.manifest.contentProtection = this.manifest.contentProtection || {}; // TODO: add full support for this.
+
+                this.manifest.contentProtection['com.microsoft.playready'] = {
+                  uri: entry.attributes.URI
+                };
+                return;
+              } // check if the content is encrypted for Widevine
+              // Widevine/HLS spec: https://storage.googleapis.com/wvdocs/Widevine_DRM_HLS.pdf
+
+
+              if (entry.attributes.KEYFORMAT === widevineUuid) {
+                var VALID_METHODS = ['SAMPLE-AES', 'SAMPLE-AES-CTR', 'SAMPLE-AES-CENC'];
+
+                if (VALID_METHODS.indexOf(entry.attributes.METHOD) === -1) {
+                  this.trigger('warn', {
+                    message: 'invalid key method provided for Widevine'
+                  });
+                  return;
+                }
+
+                if (entry.attributes.METHOD === 'SAMPLE-AES-CENC') {
+                  this.trigger('warn', {
+                    message: 'SAMPLE-AES-CENC is deprecated, please use SAMPLE-AES-CTR instead'
+                  });
+                }
+
+                if (entry.attributes.URI.substring(0, 23) !== 'data:text/plain;base64,') {
+                  this.trigger('warn', {
+                    message: 'invalid key URI provided for Widevine'
+                  });
+                  return;
+                }
+
+                if (!(entry.attributes.KEYID && entry.attributes.KEYID.substring(0, 2) === '0x')) {
+                  this.trigger('warn', {
+                    message: 'invalid key ID provided for Widevine'
+                  });
+                  return;
+                } // if Widevine key attributes are valid, store them as `contentProtection`
+                // on the manifest to emulate Widevine tag structure in a DASH mpd
+
+
+                this.manifest.contentProtection = this.manifest.contentProtection || {};
+                this.manifest.contentProtection['com.widevine.alpha'] = {
+                  attributes: {
+                    schemeIdUri: entry.attributes.KEYFORMAT,
+                    // remove '0x' from the key id string
+                    keyId: entry.attributes.KEYID.substring(2)
+                  },
+                  // decode the base64-encoded PSSH box
+                  pssh: decodeB64ToUint8Array__default['default'](entry.attributes.URI.split(',')[1])
+                };
                 return;
               }
 
@@ -994,6 +1210,10 @@ function (_Stream) {
               if (entry.byterange) {
                 currentMap.byterange = entry.byterange;
               }
+
+              if (_key) {
+                currentMap.key = _key;
+              }
             },
             'stream-inf': function streamInf() {
               this.manifest.playlists = uris;
@@ -1010,7 +1230,7 @@ function (_Stream) {
                 currentUri.attributes = {};
               }
 
-              _extends(currentUri.attributes, entry.attributes);
+              _extends__default['default'](currentUri.attributes, entry.attributes);
             },
             media: function media() {
               this.manifest.mediaGroups = this.manifest.mediaGroups || defaultMediaGroups;
@@ -1087,16 +1307,7 @@ function (_Stream) {
               }
 
               this.manifest.targetDuration = entry.duration;
-            },
-            totalduration: function totalduration() {
-              if (!isFinite(entry.duration) || entry.duration < 0) {
-                this.trigger('warn', {
-                  message: 'ignoring invalid total duration: ' + entry.duration
-                });
-                return;
-              }
-
-              this.manifest.totalDuration = entry.duration;
+              setHoldBack.call(this, this.manifest);
             },
             start: function start() {
               if (!entry.attributes || isNaN(entry.attributes['TIME-OFFSET'])) {
@@ -1122,6 +1333,124 @@ function (_Stream) {
             },
             'cue-in': function cueIn() {
               currentUri.cueIn = entry.data;
+            },
+            'skip': function skip() {
+              this.manifest.skip = camelCaseKeys(entry.attributes);
+              this.warnOnMissingAttributes_('#EXT-X-SKIP', entry.attributes, ['SKIPPED-SEGMENTS']);
+            },
+            'part': function part() {
+              var _this2 = this;
+
+              hasParts = true; // parts are always specifed before a segment
+
+              var segmentIndex = this.manifest.segments.length;
+              var part = camelCaseKeys(entry.attributes);
+              currentUri.parts = currentUri.parts || [];
+              currentUri.parts.push(part);
+
+              if (part.byterange) {
+                if (!part.byterange.hasOwnProperty('offset')) {
+                  part.byterange.offset = lastPartByterangeEnd;
+                }
+
+                lastPartByterangeEnd = part.byterange.offset + part.byterange.length;
+              }
+
+              var partIndex = currentUri.parts.length - 1;
+              this.warnOnMissingAttributes_("#EXT-X-PART #" + partIndex + " for segment #" + segmentIndex, entry.attributes, ['URI', 'DURATION']);
+
+              if (this.manifest.renditionReports) {
+                this.manifest.renditionReports.forEach(function (r, i) {
+                  if (!r.hasOwnProperty('lastPart')) {
+                    _this2.trigger('warn', {
+                      message: "#EXT-X-RENDITION-REPORT #" + i + " lacks required attribute(s): LAST-PART"
+                    });
+                  }
+                });
+              }
+            },
+            'server-control': function serverControl() {
+              var attrs = this.manifest.serverControl = camelCaseKeys(entry.attributes);
+
+              if (!attrs.hasOwnProperty('canBlockReload')) {
+                attrs.canBlockReload = false;
+                this.trigger('info', {
+                  message: '#EXT-X-SERVER-CONTROL defaulting CAN-BLOCK-RELOAD to false'
+                });
+              }
+
+              setHoldBack.call(this, this.manifest);
+
+              if (attrs.canSkipDateranges && !attrs.hasOwnProperty('canSkipUntil')) {
+                this.trigger('warn', {
+                  message: '#EXT-X-SERVER-CONTROL lacks required attribute CAN-SKIP-UNTIL which is required when CAN-SKIP-DATERANGES is set'
+                });
+              }
+            },
+            'preload-hint': function preloadHint() {
+              // parts are always specifed before a segment
+              var segmentIndex = this.manifest.segments.length;
+              var hint = camelCaseKeys(entry.attributes);
+              var isPart = hint.type && hint.type === 'PART';
+              currentUri.preloadHints = currentUri.preloadHints || [];
+              currentUri.preloadHints.push(hint);
+
+              if (hint.byterange) {
+                if (!hint.byterange.hasOwnProperty('offset')) {
+                  // use last part byterange end or zero if not a part.
+                  hint.byterange.offset = isPart ? lastPartByterangeEnd : 0;
+
+                  if (isPart) {
+                    lastPartByterangeEnd = hint.byterange.offset + hint.byterange.length;
+                  }
+                }
+              }
+
+              var index = currentUri.preloadHints.length - 1;
+              this.warnOnMissingAttributes_("#EXT-X-PRELOAD-HINT #" + index + " for segment #" + segmentIndex, entry.attributes, ['TYPE', 'URI']);
+
+              if (!hint.type) {
+                return;
+              } // search through all preload hints except for the current one for
+              // a duplicate type.
+
+
+              for (var i = 0; i < currentUri.preloadHints.length - 1; i++) {
+                var otherHint = currentUri.preloadHints[i];
+
+                if (!otherHint.type) {
+                  continue;
+                }
+
+                if (otherHint.type === hint.type) {
+                  this.trigger('warn', {
+                    message: "#EXT-X-PRELOAD-HINT #" + index + " for segment #" + segmentIndex + " has the same TYPE " + hint.type + " as preload hint #" + i
+                  });
+                }
+              }
+            },
+            'rendition-report': function renditionReport() {
+              var report = camelCaseKeys(entry.attributes);
+              this.manifest.renditionReports = this.manifest.renditionReports || [];
+              this.manifest.renditionReports.push(report);
+              var index = this.manifest.renditionReports.length - 1;
+              var required = ['LAST-MSN', 'URI'];
+
+              if (hasParts) {
+                required.push('LAST-PART');
+              }
+
+              this.warnOnMissingAttributes_("#EXT-X-RENDITION-REPORT #" + index, entry.attributes, required);
+            },
+            'part-inf': function partInf() {
+              this.manifest.partInf = camelCaseKeys(entry.attributes);
+              this.warnOnMissingAttributes_('#EXT-X-PART-INF', entry.attributes, ['PART-TARGET']);
+
+              if (this.manifest.partInf.partTarget) {
+                this.manifest.partTargetDuration = this.manifest.partInf.partTarget;
+              }
+
+              setHoldBack.call(this, this.manifest);
             }
           })[entry.tagType] || noop).call(self);
         },
@@ -1145,8 +1474,10 @@ function (_Stream) {
 
           if (currentMap) {
             currentUri.map = currentMap;
-          } // prepare for the next URI
+          } // reset the last byterange end as it needs to be 0 between parts
 
+
+          lastPartByterangeEnd = 0; // prepare for the next URI
 
           currentUri = {};
         },
@@ -1167,29 +1498,45 @@ function (_Stream) {
 
     return _this;
   }
+
+  var _proto = Parser.prototype;
+
+  _proto.warnOnMissingAttributes_ = function warnOnMissingAttributes_(identifier, attributes, required) {
+    var missing = [];
+    required.forEach(function (key) {
+      if (!attributes.hasOwnProperty(key)) {
+        missing.push(key);
+      }
+    });
+
+    if (missing.length) {
+      this.trigger('warn', {
+        message: identifier + " lacks required attribute(s): " + missing.join(', ')
+      });
+    }
+  }
   /**
    * Parse the input string and update the manifest object.
    *
    * @param {string} chunk a potentially incomplete portion of the manifest
    */
-
-
-  var _proto = Parser.prototype;
+  ;
 
   _proto.push = function push(chunk) {
     this.lineStream.push(chunk);
-  };
+  }
   /**
    * Flush any remaining input. This can be handy if the last line of an M3U8
    * manifest did not contain a trailing newline but the file has been
    * completely received.
    */
-
+  ;
 
   _proto.end = function end() {
     // flush any buffered input
     this.lineStream.push('\n');
-  };
+    this.trigger('end');
+  }
   /**
    * Add an additional parser for non-standard tags
    *
@@ -1199,24 +1546,26 @@ function (_Stream) {
    * @param {Function} [options.dataParser] function to parse the line into an object
    * @param {boolean}  [options.segment]    should tag data be attached to the segment object
    */
-
+  ;
 
   _proto.addParser = function addParser(options) {
     this.parseStream.addParser(options);
+  }
+  /**
+   * Add a custom header mapper
+   *
+   * @param {Object}   options
+   * @param {RegExp}   options.expression   a regular expression to match the custom header
+   * @param {Function} options.map          function to translate tag into a different tag
+   */
+  ;
+
+  _proto.addTagMapper = function addTagMapper(options) {
+    this.parseStream.addTagMapper(options);
   };
 
   return Parser;
-}(Stream);
-
-/**
- * @file m3u8/index.js
- *
- * Utilities for parsing M3U8 files. If the entire manifest is available,
- * `Parser` will create an object representation with enough detail for managing
- * playback. `ParseStream` and `LineStream` are lower-level parsing primitives
- * that do not assume the entirety of the manifest is ready and expose a
- * ReadableStream-like interface.
- */
+}(Stream__default['default']);
 
 exports.LineStream = LineStream;
 exports.ParseStream = ParseStream;
